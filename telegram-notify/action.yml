@@ -1,0 +1,127 @@
+name: 'Telegram Deployment Notification'
+description: 'Send deployment status notifications to Telegram'
+author: 'Your Team'
+
+inputs:
+  status:
+    description: 'Deployment status (success/failure)'
+    required: true
+  telegram_bot_token:
+    description: 'Telegram bot token'
+    required: true
+  telegram_chat_id:
+    description: 'Telegram chat ID'
+    required: true
+  environment:
+    description: 'Deployment environment (e.g., staging, production)'
+    required: true
+  module_name:
+    description: 'Name of the module being deployed'
+    required: false
+    default: ''
+  app_name:
+    description: 'Name of the application (for multi-app repos)'
+    required: false
+    default: ''
+  commit_sha:
+    description: 'Git commit SHA'
+    required: true
+  commit_author:
+    description: 'Git commit author name'
+    required: false
+    default: ''
+  success_emoji:
+    description: 'Emoji for success notification'
+    required: false
+    default: '✅'
+  failure_emoji:
+    description: 'Emoji for failure notification'
+    required: false
+    default: '❌'
+  additional_info:
+    description: 'Additional information to include in the notification'
+    required: false
+    default: ''
+  parse_mode:
+    description: 'Telegram parse mode (HTML, Markdown, MarkdownV2)'
+    required: false
+    default: 'HTML'
+
+outputs:
+  notification_sent:
+    description: 'Whether notification was sent successfully'
+    value: ${{ steps.notify.outputs.sent }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send Telegram notification
+      id: notify
+      shell: bash
+      run: |
+        SHORT_COMMIT="${{ inputs.commit_sha }}"
+        SHORT_COMMIT="${SHORT_COMMIT:0:7}"
+        
+        # Build the deployment identifier
+        DEPLOYMENT_ID=""
+        if [ -n "${{ inputs.app_name }}" ]; then
+          DEPLOYMENT_ID="${{ inputs.app_name }}"
+        fi
+        if [ -n "${{ inputs.module_name }}" ]; then
+          if [ -n "$DEPLOYMENT_ID" ]; then
+            DEPLOYMENT_ID="${DEPLOYMENT_ID}-${{ inputs.module_name }}"
+          else
+            DEPLOYMENT_ID="${{ inputs.module_name }}"
+          fi
+        fi
+        
+        # If no deployment ID, use environment only
+        if [ -z "$DEPLOYMENT_ID" ]; then
+          DEPLOYMENT_ID="${{ inputs.environment }}"
+        fi
+        
+        # Construct message based on status
+        if [ "${{ inputs.status }}" == "success" ]; then
+          EMOJI="${{ inputs.success_emoji }}"
+          STATUS_TEXT="completed successfully"
+        else
+          EMOJI="${{ inputs.failure_emoji }}"
+          STATUS_TEXT="failed"
+        fi
+        
+        # Build base message
+        MESSAGE="${EMOJI} Deployment of <b>${DEPLOYMENT_ID}</b> ${STATUS_TEXT}!%0A"
+        MESSAGE="${MESSAGE}📦 Commit: <code>${SHORT_COMMIT}</code>%0A"
+        MESSAGE="${MESSAGE}🌐 Environment: <b>${{ inputs.environment }}</b>"
+        
+        # Add commit author if provided
+        if [ -n "${{ inputs.commit_author }}" ]; then
+          # Get first name only (before space or @)
+          AUTHOR_NAME="${{ inputs.commit_author }}"
+          AUTHOR_SHORT=$(echo "$AUTHOR_NAME" | cut -d' ' -f1 | cut -d'@' -f1)
+          MESSAGE="${MESSAGE}%0A👤 By: ${AUTHOR_SHORT}"
+        fi
+        
+        # Add additional info if provided
+        if [ -n "${{ inputs.additional_info }}" ]; then
+          MESSAGE="${MESSAGE}%0A%0A${{ inputs.additional_info }}"
+        fi
+        
+        # Send notification
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          "https://api.telegram.org/bot${{ inputs.telegram_bot_token }}/sendMessage" \
+          -d "chat_id=${{ inputs.telegram_chat_id }}" \
+          -d "text=${MESSAGE}" \
+          -d "parse_mode=${{ inputs.parse_mode }}")
+        
+        if [ "$HTTP_CODE" -eq 200 ]; then
+          echo "sent=true" >> $GITHUB_OUTPUT
+          echo "✅ Notification sent successfully"
+        else
+          echo "sent=false" >> $GITHUB_OUTPUT
+          echo "⚠️ Failed to send notification (HTTP $HTTP_CODE)"
+        fi
+
+branding:
+  icon: 'send'
+  color: 'blue'
