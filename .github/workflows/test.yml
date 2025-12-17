@@ -1,0 +1,227 @@
+name: Test Telegram Notification Action
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      test_status:
+        description: 'Test status (success/failure)'
+        required: false
+        type: choice
+        options:
+          - success
+          - failure
+        default: 'success'
+
+jobs:
+  test-basic:
+    name: Test Basic Notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Success Notification
+        uses: ./telegram-notify
+        with:
+          status: success
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: 'test'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+
+  test-with-module:
+    name: Test with Module Name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Module Notification
+        uses: ./telegram-notify
+        with:
+          status: success
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: 'test'
+          module_name: 'test-api'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+          success_emoji: '🧪'
+
+  test-with-app:
+    name: Test with App and Module
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test App Notification
+        uses: ./telegram-notify
+        with:
+          status: success
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: 'test'
+          app_name: 'myapp'
+          module_name: 'backend'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+
+  test-failure:
+    name: Test Failure Notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Failure Notification
+        uses: ./telegram-notify
+        with:
+          status: failure
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: 'test'
+          module_name: 'test-service'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+          failure_emoji: '⚠️'
+
+  test-additional-info:
+    name: Test with Additional Info
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test with Extra Info
+        uses: ./telegram-notify
+        with:
+          status: success
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: 'test'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+          additional_info: "🧪 Test run%0A📋 PR: ${{ github.event.pull_request.number || 'N/A' }}"
+
+  test-matrix:
+    name: Test Matrix (${{ matrix.env }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, staging, prod]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Matrix Notification
+        uses: ./telegram-notify
+        with:
+          status: success
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: ${{ matrix.env }}
+          module_name: 'test-module'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+
+  validate-action:
+    name: Validate Action Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check action.yml exists
+        run: |
+          if [ ! -f "telegram-notify/action.yml" ]; then
+            echo "❌ action.yml not found!"
+            exit 1
+          fi
+          echo "✅ action.yml exists"
+
+      - name: Validate YAML syntax
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install js-yaml
+        run: npm install -g js-yaml
+
+      - name: Check YAML is valid
+        run: |
+          js-yaml telegram-notify/action.yml > /dev/null
+          echo "✅ action.yml is valid YAML"
+
+      - name: Check required fields
+        run: |
+          echo "Checking required fields..."
+          
+          if ! grep -q "^name:" telegram-notify/action.yml; then
+            echo "❌ Missing 'name' field"
+            exit 1
+          fi
+          
+          if ! grep -q "^description:" telegram-notify/action.yml; then
+            echo "❌ Missing 'description' field"
+            exit 1
+          fi
+          
+          if ! grep -q "^inputs:" telegram-notify/action.yml; then
+            echo "❌ Missing 'inputs' field"
+            exit 1
+          fi
+          
+          echo "✅ All required fields present"
+
+      - name: Verify required inputs
+        run: |
+          echo "Verifying required inputs..."
+          
+          required=(
+            "status"
+            "telegram_bot_token"
+            "telegram_chat_id"
+            "environment"
+            "commit_sha"
+          )
+          
+          for input in "${required[@]}"; do
+            if ! grep -q "  $input:" telegram-notify/action.yml; then
+              echo "❌ Missing required input: $input"
+              exit 1
+            fi
+            echo "✅ Found: $input"
+          done
+
+      - name: Check README exists
+        run: |
+          if [ ! -f "telegram-notify/README.md" ]; then
+            echo "❌ README.md not found!"
+            exit 1
+          fi
+          echo "✅ README.md exists"
+
+  test-manual:
+    name: Manual Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Manual Test Notification
+        uses: ./telegram-notify
+        with:
+          status: ${{ inputs.test_status }}
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: 'manual-test'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+          additional_info: '🧪 Manual workflow dispatch test'

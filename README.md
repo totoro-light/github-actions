@@ -33,6 +33,13 @@ Send deployment status notifications to Telegram.
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_CHAT_ID`
 
+## Testing
+
+See [TESTING.md](./TESTING.md) for information about running tests.
+
+**Quick test:**
+- Go to Actions tab → "Test Telegram Notification Action" → Run workflow
+
 ## License
 
 MIT
