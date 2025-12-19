@@ -220,7 +220,7 @@ jobs:
         run: |
           echo "Validating auto-detect outputs..."
           HAS_CHANGES="${{ needs.test-auto-detect-apps.outputs.has-changes }}"
-          MODULES="${{ needs.test-auto-detect-apps.outputs.deploy-modules }}"
+          MODULES='${{ needs.test-auto-detect-apps.outputs.deploy-modules }}'
           
           # Check has-changes is boolean
           if [ "$HAS_CHANGES" != "true" ] && [ "$HAS_CHANGES" != "false" ]; then
@@ -240,7 +240,7 @@ jobs:
         run: |
           echo "Validating manual selection outputs..."
           HAS_CHANGES="${{ needs.test-manual-modules.outputs.has-changes }}"
-          MODULES="${{ needs.test-manual-modules.outputs.deploy-modules }}"
+          MODULES='${{ needs.test-manual-modules.outputs.deploy-modules }}'
           
           # Manual selection should always have changes
           if [ "$HAS_CHANGES" != "true" ]; then
