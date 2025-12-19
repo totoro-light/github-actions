@@ -25,7 +25,5 @@ module.exports = {
     'events',
     'stream',
     'os',
-    // Keep dotenv external as it's a runtime dependency
-    'dotenv',
   ],
 };
