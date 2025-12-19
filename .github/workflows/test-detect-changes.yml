@@ -194,7 +194,8 @@ jobs:
           manual_modules: 'integration-test'
 
       - name: Notify results
-        if: secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        if: always()
+        continue-on-error: true
         uses: ./telegram-notify
         with:
           status: success
