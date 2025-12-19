@@ -1,0 +1,29 @@
+name: 'Detect Changed Modules'
+description: 'Detects changed modules in a monorepo or uses manually specified modules'
+author: 'totoro-light'
+
+inputs:
+  manual_modules:
+    description: 'Comma-separated list of modules to deploy manually (overrides auto-detection)'
+    required: false
+    default: ''
+  modules_directory:
+    description: 'Directory prefix to filter changed files. Use "apps/" for apps/module1, or "" for root-level modules like module1/'
+    required: false
+    default: 'apps/'
+
+outputs:
+  deploy-modules:
+    description: 'JSON array of modules that need to be deployed'
+    value: ${{ steps.detect.outputs.deploy-modules }}
+  has-changes:
+    description: 'Whether there are any modules to deploy (true/false)'
+    value: ${{ steps.detect.outputs.has-changes }}
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+
+branding:
+  icon: 'git-branch'
+  color: 'green'

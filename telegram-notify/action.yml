@@ -1,6 +1,6 @@
 name: 'Telegram Deployment Notification'
 description: 'Send deployment status notifications to Telegram'
-author: 'Your Team'
+author: 'totoro-light'
 
 inputs:
   status:

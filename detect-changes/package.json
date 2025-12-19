@@ -1,0 +1,23 @@
+{
+  "name": "deployment-scripts",
+  "version": "1.0.0",
+  "description": "Node.js deployment scripts for GitHub Actions",
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "node index.js",
+    "build": "rollup -c",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "dotenv": "17.2.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "rollup": "^4.53.5"
+  }
+}

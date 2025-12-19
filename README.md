@@ -7,6 +7,25 @@ Custom reusable GitHub Actions for deployment workflows. Use these actions in an
 
 ## Available Actions
 
+### 🔍 detect-changes
+
+Detect changed modules in a monorepo by analyzing git diffs, or use manually specified modules.
+
+**Quick Start:**
+
+```yaml
+- name: Detect changed modules
+  id: detect
+  uses: totoro-light/github-actions/detect-changes@main
+
+- name: Deploy changed modules
+  if: steps.detect.outputs.has-changes == 'true'
+  run: |
+    echo "Modules to deploy: ${{ steps.detect.outputs.deploy-modules }}"
+```
+
+**Documentation:** See [detect-changes/README.md](./detect-changes/README.md)
+
 ### 📱 telegram-notify
 
 Send deployment status notifications to Telegram with beautiful formatting.
