@@ -1,0 +1,295 @@
+name: Test Detect Changes Action
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      manual_modules:
+        description: 'Manual modules to test (comma-separated)'
+        required: false
+        type: string
+        default: ''
+      modules_directory:
+        description: 'Modules directory (e.g., apps/, packages/, or empty for root)'
+        required: false
+        type: string
+        default: 'apps/'
+
+jobs:
+  # Test 1: Auto-detection with default apps/ directory
+  test-auto-detect-apps:
+    name: Test Auto-detect (apps/)
+    runs-on: ubuntu-latest
+    outputs:
+      deploy-modules: ${{ steps.detect.outputs.deploy-modules }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need at least 2 commits for comparison
+
+      - name: Detect changed modules
+        id: detect
+        uses: ./detect-changes
+
+      - name: Display results
+        run: |
+          echo "Has changes: ${{ steps.detect.outputs.has-changes }}"
+          echo "Deploy modules: ${{ steps.detect.outputs.deploy-modules }}"
+          
+          # Parse and display as list
+          if [ "${{ steps.detect.outputs.has-changes }}" == "true" ]; then
+            echo "Modules to deploy:"
+            echo '${{ steps.detect.outputs.deploy-modules }}' | jq -r '.[]'
+          else
+            echo "No modules to deploy"
+          fi
+
+  # Test 2: Auto-detection with root-level modules
+  test-auto-detect-root:
+    name: Test Auto-detect (root level)
+    runs-on: ubuntu-latest
+    outputs:
+      deploy-modules: ${{ steps.detect.outputs.deploy-modules }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed modules (root level)
+        id: detect
+        uses: ./detect-changes
+        with:
+          modules_directory: ''
+
+      - name: Display results
+        run: |
+          echo "Has changes: ${{ steps.detect.outputs.has-changes }}"
+          echo "Deploy modules: ${{ steps.detect.outputs.deploy-modules }}"
+          
+          if [ "${{ steps.detect.outputs.has-changes }}" == "true" ]; then
+            echo "Root-level modules changed:"
+            echo '${{ steps.detect.outputs.deploy-modules }}' | jq -r '.[]'
+          fi
+
+  # Test 3: Manual module selection
+  test-manual-modules:
+    name: Test Manual Selection
+    runs-on: ubuntu-latest
+    outputs:
+      deploy-modules: ${{ steps.detect.outputs.deploy-modules }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect with manual modules
+        id: detect
+        uses: ./detect-changes
+        with:
+          manual_modules: 'api,web,mobile'
+
+      - name: Display results
+        run: |
+          echo "Has changes: ${{ steps.detect.outputs.has-changes }}"
+          echo "Deploy modules: ${{ steps.detect.outputs.deploy-modules }}"
+          
+          # Verify manual modules are returned
+          echo "Manually selected modules:"
+          echo '${{ steps.detect.outputs.deploy-modules }}' | jq -r '.[]'
+
+  # Test 4: Custom directory (packages/)
+  test-custom-directory:
+    name: Test Custom Directory (packages/)
+    runs-on: ubuntu-latest
+    outputs:
+      deploy-modules: ${{ steps.detect.outputs.deploy-modules }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed modules in packages/
+        id: detect
+        uses: ./detect-changes
+        with:
+          modules_directory: 'packages/'
+
+      - name: Display results
+        run: |
+          echo "Has changes: ${{ steps.detect.outputs.has-changes }}"
+          echo "Deploy modules: ${{ steps.detect.outputs.deploy-modules }}"
+
+  # Test 5: Workflow dispatch with custom inputs
+  test-workflow-dispatch:
+    name: Test Workflow Dispatch Inputs
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    outputs:
+      deploy-modules: ${{ steps.detect.outputs.deploy-modules }}
+      has-changes: ${{ steps.detect.outputs.has-changes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect with custom inputs
+        id: detect
+        uses: ./detect-changes
+        with:
+          manual_modules: ${{ github.event.inputs.manual_modules }}
+          modules_directory: ${{ github.event.inputs.modules_directory }}
+
+      - name: Display results
+        run: |
+          echo "Manual modules input: ${{ github.event.inputs.manual_modules }}"
+          echo "Modules directory: ${{ github.event.inputs.modules_directory }}"
+          echo "Has changes: ${{ steps.detect.outputs.has-changes }}"
+          echo "Deploy modules: ${{ steps.detect.outputs.deploy-modules }}"
+
+  # Test 6: Matrix deployment simulation
+  test-matrix-deployment:
+    name: Deploy ${{ matrix.module }}
+    needs: test-auto-detect-apps
+    if: needs.test-auto-detect-apps.outputs.has-changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.test-auto-detect-apps.outputs.deploy-modules) }}
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Simulate deployment
+        run: |
+          echo "🚀 Deploying module: ${{ matrix.module }}"
+          echo "Environment: test"
+          echo "Commit: ${{ github.sha }}"
+          echo "✅ Deployment simulation completed"
+
+  # Test 7: Integration test with both actions
+  test-integration:
+    name: Integration Test (Detect + Notify)
+    needs: test-manual-modules
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changes
+        id: detect
+        uses: ./detect-changes
+        with:
+          manual_modules: 'integration-test'
+
+      - name: Notify results
+        if: secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != ''
+        uses: ./telegram-notify
+        with:
+          status: success
+          telegram_bot_token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          telegram_chat_id: ${{ secrets.TELEGRAM_CHAT_ID }}
+          environment: 'test'
+          module_name: 'detect-changes'
+          commit_sha: ${{ github.sha }}
+          commit_author: ${{ github.actor }}
+          additional_info: |
+            Detected modules: ${{ steps.detect.outputs.deploy-modules }}
+            Has changes: ${{ steps.detect.outputs.has-changes }}
+
+  # Test 8: Validation and assertions
+  test-validation:
+    name: Validate Outputs
+    needs: [test-auto-detect-apps, test-manual-modules]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Validate auto-detect outputs
+        run: |
+          echo "Validating auto-detect outputs..."
+          HAS_CHANGES="${{ needs.test-auto-detect-apps.outputs.has-changes }}"
+          MODULES="${{ needs.test-auto-detect-apps.outputs.deploy-modules }}"
+          
+          # Check has-changes is boolean
+          if [ "$HAS_CHANGES" != "true" ] && [ "$HAS_CHANGES" != "false" ]; then
+            echo "❌ has-changes must be 'true' or 'false', got: $HAS_CHANGES"
+            exit 1
+          fi
+          
+          # Check modules is valid JSON array
+          if ! echo "$MODULES" | jq empty 2>/dev/null; then
+            echo "❌ deploy-modules is not valid JSON: $MODULES"
+            exit 1
+          fi
+          
+          echo "✅ Auto-detect outputs are valid"
+
+      - name: Validate manual selection outputs
+        run: |
+          echo "Validating manual selection outputs..."
+          HAS_CHANGES="${{ needs.test-manual-modules.outputs.has-changes }}"
+          MODULES="${{ needs.test-manual-modules.outputs.deploy-modules }}"
+          
+          # Manual selection should always have changes
+          if [ "$HAS_CHANGES" != "true" ]; then
+            echo "❌ Manual selection should have has-changes=true, got: $HAS_CHANGES"
+            exit 1
+          fi
+          
+          # Check expected modules are present
+          if ! echo "$MODULES" | jq -e 'index("api")' > /dev/null; then
+            echo "❌ Expected 'api' in modules: $MODULES"
+            exit 1
+          fi
+          
+          if ! echo "$MODULES" | jq -e 'index("web")' > /dev/null; then
+            echo "❌ Expected 'web' in modules: $MODULES"
+            exit 1
+          fi
+          
+          if ! echo "$MODULES" | jq -e 'index("mobile")' > /dev/null; then
+            echo "❌ Expected 'mobile' in modules: $MODULES"
+            exit 1
+          fi
+          
+          echo "✅ Manual selection outputs are valid"
+
+  # Summary job
+  test-summary:
+    name: Test Summary
+    needs: [test-auto-detect-apps, test-auto-detect-root, test-manual-modules, test-custom-directory, test-validation]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Display summary
+        run: |
+          echo "## Test Results Summary"
+          echo ""
+          echo "### Auto-detect (apps/)"
+          echo "- Has changes: ${{ needs.test-auto-detect-apps.outputs.has-changes }}"
+          echo "- Modules: ${{ needs.test-auto-detect-apps.outputs.deploy-modules }}"
+          echo ""
+          echo "### Auto-detect (root level)"
+          echo "- Has changes: ${{ needs.test-auto-detect-root.outputs.has-changes }}"
+          echo "- Modules: ${{ needs.test-auto-detect-root.outputs.deploy-modules }}"
+          echo ""
+          echo "### Manual selection"
+          echo "- Has changes: ${{ needs.test-manual-modules.outputs.has-changes }}"
+          echo "- Modules: ${{ needs.test-manual-modules.outputs.deploy-modules }}"
+          echo ""
+          echo "### Custom directory (packages/)"
+          echo "- Has changes: ${{ needs.test-custom-directory.outputs.has-changes }}"
+          echo "- Modules: ${{ needs.test-custom-directory.outputs.deploy-modules }}"
+          echo ""
+          echo "✅ All tests completed!"

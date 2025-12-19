@@ -113,7 +113,8 @@ For complete documentation and all available options, see [telegram-notify/READM
 See [TESTING.md](./TESTING.md) for information about running tests.
 
 **Quick test:**
-- Go to [Actions tab](https://github.com/totoro-light/github-actions/actions) → "Test Telegram Notification Action" → Run workflow
+- **Detect Changes**: Go to [Actions tab](https://github.com/totoro-light/github-actions/actions) → "Test Detect Changes Action" → Run workflow
+- **Telegram Notify**: Go to [Actions tab](https://github.com/totoro-light/github-actions/actions) → "Test Telegram Notification Action" → Run workflow
 
 ## License
 

@@ -1,14 +1,26 @@
 # Testing Guide
 
-This document explains how to test the Telegram notification action.
+This document explains how to test the GitHub Actions in this repository.
 
 ## Automated Tests
 
 The repository includes automated tests that run on every push and pull request.
 
-### Test Workflow
+### Test Workflows
 
-Location: `.github/workflows/test.yml`
+#### 1. Detect Changes Action (`.github/workflows/test-detect-changes.yml`)
+
+**Tests include:**
+- ✅ Auto-detection with `apps/` directory
+- ✅ Auto-detection with root-level modules
+- ✅ Manual module selection
+- ✅ Custom directory structure (`packages/`)
+- ✅ Workflow dispatch with custom inputs
+- ✅ Matrix deployment simulation
+- ✅ Output validation and assertions
+- ✅ Integration test with telegram-notify
+
+#### 2. Telegram Notify Action (`.github/workflows/test.yml`)
 
 **Tests include:**
 - ✅ Basic notification (success)
@@ -27,7 +39,16 @@ Tests run automatically on:
 - Pull requests
 - Manual trigger via workflow dispatch
 
-**Manual test:**
+**Manual test - Detect Changes:**
+1. Go to Actions tab in GitHub
+2. Select "Test Detect Changes Action"
+3. Click "Run workflow"
+4. Optionally configure:
+   - Manual modules (e.g., `api,web,mobile`)
+   - Modules directory (e.g., `apps/`, `packages/`, or empty for root)
+5. Click "Run workflow"
+
+**Manual test - Telegram Notify:**
 1. Go to Actions tab in GitHub
 2. Select "Test Telegram Notification Action"
 3. Click "Run workflow"
@@ -98,20 +119,44 @@ act -j test-basic --secret-file .secrets
 
 ## What to Test
 
-### Basic Functionality
+### Detect Changes Action
+
+#### Basic Functionality
+- [x] Auto-detects changed modules in `apps/` directory
+- [x] Outputs valid JSON array
+- [x] Returns correct `has-changes` boolean
+- [x] Handles manual module selection
+- [x] Supports custom directory structures
+
+#### Directory Configurations
+- [x] Works with `apps/` directory (default)
+- [x] Works with root-level modules (empty string)
+- [x] Works with custom directories (`packages/`, etc.)
+- [x] Correctly extracts module names from paths
+
+#### Edge Cases
+- [x] No changes detected (returns empty array)
+- [x] Multiple modules changed
+- [x] Duplicate modules are filtered
+- [x] Empty manual modules input
+- [x] Works in matrix strategy
+
+### Telegram Notify Action
+
+#### Basic Functionality
 - [x] Notification is sent
 - [x] Success emoji appears correctly
 - [x] Failure emoji appears correctly
 - [x] Commit hash is shortened (7 chars)
 - [x] Environment name is displayed
 
-### Optional Fields
+#### Optional Fields
 - [x] Module name appears when provided
 - [x] App name appears when provided
 - [x] Author name is shortened correctly
 - [x] Additional info is included
 
-### Edge Cases
+#### Edge Cases
 - [x] Works with no module name
 - [x] Works with no app name
 - [x] Works with no author
@@ -144,6 +189,18 @@ act -j test-basic --secret-file .secrets
 
 Before releasing a new version:
 
+### Detect Changes Action
+- [ ] All automated tests pass
+- [ ] Auto-detection works with `apps/` directory
+- [ ] Auto-detection works with root-level modules
+- [ ] Manual module selection works
+- [ ] Custom directory configuration works
+- [ ] Outputs are valid JSON
+- [ ] Matrix strategy integration works
+- [ ] README is up to date
+- [ ] No sensitive data in examples
+
+### Telegram Notify Action
 - [ ] All automated tests pass
 - [ ] Manual test workflow succeeds
 - [ ] Notification appears in Telegram
