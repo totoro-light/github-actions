@@ -15,10 +15,8 @@ inputs:
 outputs:
   deploy-modules:
     description: 'JSON array of modules that need to be deployed'
-    value: ${{ steps.detect.outputs.deploy-modules }}
   has-changes:
     description: 'Whether there are any modules to deploy (true/false)'
-    value: ${{ steps.detect.outputs.has-changes }}
 
 runs:
   using: 'node20'

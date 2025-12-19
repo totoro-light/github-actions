@@ -570,7 +570,7 @@ function requireDetectChanges () {
 	  log.info(`Using manually selected modules: ${MANUAL_MODULES}`);
 
 	  // Convert comma-separated list to JSON array
-	  const manualModulesArray = Array.from(new Set(MANUAL_MODULES.split(",").filter((module) => module.trim())));
+	  const manualModulesArray = Array.from(new Set(MANUAL_MODULES.split(",").map((module) => module.trim()).filter((module) => module)));
 	  const manualModulesJson = JSON.stringify(manualModulesArray);
 
 	  writeGitHubOutput("deploy-modules", manualModulesJson);
