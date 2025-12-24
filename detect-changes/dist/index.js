@@ -553,7 +553,7 @@ function requireDetectChanges () {
 	// Get manual modules from GitHub Actions input or environment variable (for local testing)
 	const MANUAL_MODULES = process.env.INPUT_MANUAL_MODULES || process.env.MANUAL_MODULES || "";
 	// Get modules directory prefix (e.g., "apps/", "packages/", or "" for root level)
-	const MODULES_DIRECTORY = process.env.INPUT_MODULES_DIRECTORY || process.env.MODULES_DIRECTORY || "apps/";
+	const MODULES_DIRECTORY = process.env.INPUT_MODULES_DIRECTORY || process.env.MODULES_DIRECTORY || "";
 
 	// Function to execute git commands
 	function execGitCommand(command) {
@@ -590,7 +590,7 @@ function requireDetectChanges () {
 	      .split("\n")
 	      .filter((file) => {
 	        // Handle different directory prefixes
-	        if (MODULES_DIRECTORY === "") {
+	        if (!MODULES_DIRECTORY || MODULES_DIRECTORY === "") {
 	          // Root level: include all files
 	          return true
 	        }
@@ -599,7 +599,7 @@ function requireDetectChanges () {
 	      })
 	      .map((file) => {
 	        // Extract module name based on directory structure
-	        if (MODULES_DIRECTORY === "") {
+	        if (!MODULES_DIRECTORY || MODULES_DIRECTORY === "") {
 	          // Root level: module is the first directory (e.g., "module1/file.js" -> "module1")
 	          return file.split("/")[0]
 	        }
@@ -622,7 +622,7 @@ function requireDetectChanges () {
 	    } else {
 	      writeGitHubOutput("deploy-modules", "[]");
 	      writeGitHubOutput("has-changes", "false");
-	      const dirMsg = `${MODULES_DIRECTORY} directory` ;
+	      const dirMsg = MODULES_DIRECTORY ? `${MODULES_DIRECTORY} directory` : "root level";
 	      log.info(`No modules changed in ${dirMsg}`);
 	    }
 	  } else {

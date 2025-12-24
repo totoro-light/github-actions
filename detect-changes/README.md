@@ -85,10 +85,12 @@ jobs:
 
 ## Inputs
 
+**Note**: Need at least 2 commits in the git history for auto-detection to work. `fetch-depth: 2`
+
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
 | `manual_modules` | Comma-separated list of modules to deploy (overrides auto-detection) | No | `''` |
-| `modules_directory` | Directory prefix to filter changed files. Use `apps/` for `apps/module1`, or `''` (empty) for root-level `module1/` | No | `apps/` |
+| `modules_directory` | Directory prefix to filter changed files. Use `apps/` for `apps/module1`, or `''` (empty) for root-level `module1/` | No | '' |
 
 ## Outputs
 

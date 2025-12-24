@@ -7,7 +7,7 @@ const { writeGitHubOutput } = require("./writeGitHubOutput")
 // Get manual modules from GitHub Actions input or environment variable (for local testing)
 const MANUAL_MODULES = process.env.INPUT_MANUAL_MODULES || process.env.MANUAL_MODULES || ""
 // Get modules directory prefix (e.g., "apps/", "packages/", or "" for root level)
-const MODULES_DIRECTORY = process.env.INPUT_MODULES_DIRECTORY || process.env.MODULES_DIRECTORY || "apps/"
+const MODULES_DIRECTORY = process.env.INPUT_MODULES_DIRECTORY || process.env.MODULES_DIRECTORY || ""
 
 // Function to execute git commands
 function execGitCommand(command) {
