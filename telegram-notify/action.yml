@@ -62,6 +62,9 @@ runs:
         SHORT_COMMIT="${{ inputs.commit_sha }}"
         SHORT_COMMIT="${SHORT_COMMIT:0:7}"
         
+        # Extract branch name
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        
         # Build the deployment identifier
         DEPLOYMENT_ID=""
         if [ -n "${{ inputs.app_name }}" ]; then
@@ -92,6 +95,7 @@ runs:
         # Build base message
         MESSAGE="${EMOJI} Deployment of <b>${DEPLOYMENT_ID}</b> ${STATUS_TEXT}!%0A"
         MESSAGE="${MESSAGE}📦 Commit: <code>${SHORT_COMMIT}</code>%0A"
+        MESSAGE="${MESSAGE}🌿 Branch: <b>${BRANCH_NAME}</b>%0A"
         MESSAGE="${MESSAGE}🌐 Environment: <b>${{ inputs.environment }}</b>"
         
         # Add commit author if provided
